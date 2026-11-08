@@ -16,13 +16,15 @@ async function main() {
       const svg = await fs.readFile(
         path.join(root, "public/assets/writings/midterms-2026", name),
       );
-      const webp = await sharp(svg, { density: 180 })
+      const { data: webp, info } = await sharp(svg, { density: 180 })
         .resize({ width: mobile ? 900 : 1800 })
         .webp({ quality: 94, effort: 5 })
-        .toBuffer();
+        .toBuffer({ resolveWithObject: true });
       bytes += webp.length;
       block[mobile ? "mobileSrc" : "src"] =
         `data:image/webp;base64,${webp.toString("base64")}`;
+      block[mobile ? "mobileWidth" : "width"] = info.width;
+      block[mobile ? "mobileHeight" : "height"] = info.height;
     }
   }
   await fs.writeFile(file, JSON.stringify(article, null, 2) + "\n");

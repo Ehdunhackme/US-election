@@ -69,7 +69,7 @@ test("every figure and equation renders without external assets", async ({
     .getByRole("heading", { name: "Model description", exact: true })
     .scrollIntoViewIfNeeded();
   await page.screenshot({ path: testInfo.outputPath("article-model.png") });
-  await page.locator("#05-benchmark-comparison").scrollIntoViewIfNeeded();
+  await page.locator('[id="05-benchmark-comparison"]').scrollIntoViewIfNeeded();
   await page.screenshot({ path: testInfo.outputPath("article-benchmark.png") });
   expect(external).toEqual([]);
 });
