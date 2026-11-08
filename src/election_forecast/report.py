@@ -534,7 +534,7 @@ def article(root, out, history, forecast, validation, scores, masked, meta):
   'Election rules',
   'https://www.sos.la.gov/elections-voting/how-candidates-are-elected')]
     payload = {
-        "title": "Modelling the 2026 midterms",
+        "title": "Modelling the 2026 US Midterm Elections",
         "date": "2026-11-08",
         "dateLabel": "8 Nov 2026",
         "note": "Written after Election Day",

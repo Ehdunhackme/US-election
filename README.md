@@ -1,4 +1,4 @@
-# Modelling the 2026 midterms
+# Modelling the 2026 US Midterm Elections
 
 I compared **13 model families and 47 settings** on past elections, then used
 the best performer to estimate all **435 House districts and 35 Senate contests**.
