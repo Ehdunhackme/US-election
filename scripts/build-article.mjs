@@ -68,7 +68,8 @@ h2{font-size:20px;line-height:1.4;color:#f5f5f5;margin:48px 0 16px}header+h2{mar
 p{margin:0 0 20px}a{color:inherit;text-underline-offset:3px}figure{width:100%;margin:28px 0 40px}
 figure picture,figure img{display:block;width:100%;height:auto}figcaption{font-size:13px;line-height:1.6;color:#969696;margin:14px 0 0;max-width:74ch}
 .equation{overflow-x:auto;padding:24px 8px;margin:24px 0 32px;color:#e6e6e6;font-size:17px}.katex-display{margin:0;width:max-content;min-width:100%}
-.table{overflow:auto;margin:24px 0}table{width:100%;border-collapse:collapse;font-size:13px;line-height:1.55}th,td{padding:12px 14px;text-align:left;min-width:90px;vertical-align:top}thead th{border-bottom:1px solid #383838}th{color:#eee;font-weight:500}th:first-child,td:first-child{padding-left:0}
+.table{overflow:auto;margin:24px 0}table{width:100%;overflow-wrap:normal;word-break:normal;border-collapse:collapse;font-size:13px;line-height:1.55}th,td{padding:12px 14px;text-align:left;min-width:90px;vertical-align:top}thead th{border-bottom:1px solid #383838;white-space:nowrap}th{color:#eee;font-weight:500}th:first-child,td:first-child{padding-left:0}
+.race-scroll{width:100%;max-width:100%;min-width:0;max-height:32rem;overflow:auto}.race-table{width:1180px;table-layout:fixed}.race-table th,.race-table td{min-width:0;text-align:left}.race-table th:nth-child(4),.race-table th:nth-child(5),.race-table td:nth-child(4),.race-table td:nth-child(5){text-align:right;white-space:nowrap}.race-table tbody th{white-space:nowrap}.race-table thead th{position:sticky;top:0;z-index:1;background:#1a1a1a;box-shadow:0 1px #383838}
 details{border:0;margin:24px 0}summary{display:flex;align-items:center;gap:16px;width:fit-content;max-width:100%;cursor:pointer;padding:10px 12px;min-height:44px;border:1px solid #565656;border-radius:4px;color:#eee;font-weight:500;list-style:none}summary::-webkit-details-marker{display:none}summary::after{content:"+";margin-left:auto}details[open]>summary::after{content:"−"}summary:hover{border-color:#aaa9a6;background:#222}details.is-animating{overflow:hidden}.disclosure-body{display:flow-root}
 footer{margin-top:48px}.downloads{display:flex;flex-wrap:wrap;gap:8px 24px;margin:0 0 28px;font-size:14px}.source-groups{font-size:13px;line-height:1.7;margin:0}.source-groups>div{display:grid;grid-template-columns:112px minmax(0,1fr);gap:16px;margin-bottom:16px}.source-groups dt{font-weight:500;color:#aaa9a6}.source-groups dd{display:flex;flex-wrap:wrap;gap:4px 16px;margin:0}
 :focus-visible{outline:2px solid #8ab4ff;outline-offset:4px}
@@ -106,9 +107,13 @@ for (const block of article.blocks) {
     figures++;
   }
   if (block.type === "table") {
+    const raceTable = block.columns[0] === "Race";
+    const columns = raceTable
+      ? `<colgroup>${[70, 180, 220, 128, 124, 128, 150, 180].map((width) => `<col style="width:${width}px">`).join("")}</colgroup>`
+      : "";
     if (block.summary)
       html += `<details><summary>${escape(block.summary)}</summary><div class="disclosure-body">`;
-    html += `<div class="table" role="region" tabindex="0" aria-label="${escape(block.summary || block.columns[0] + " table")}"><table><thead><tr>${block.columns.map((c) => `<th scope="col">${escape(c)}</th>`).join("")}</tr></thead><tbody>`;
+    html += `<div class="table${raceTable ? " race-scroll" : ""}" role="region" tabindex="0" aria-label="${escape(block.summary || block.columns[0] + " table")}"><table${raceTable ? ' class="race-table"' : ""}>${columns}<thead><tr>${block.columns.map((c) => `<th scope="col">${escape(c)}</th>`).join("")}</tr></thead><tbody>`;
     for (const row of block.rows)
       html += `<tr>${row.map((v, i) => `<${i === 0 ? 'th scope="row"' : "td"}>${escape(typeof v === "number" && !Number.isInteger(v) ? v.toFixed(3).replace(/0+$/, "").replace(/\.$/, "") : v)}</${i === 0 ? "th" : "td"}>`).join("")}</tr>`;
     html += `</tbody></table></div>`;
