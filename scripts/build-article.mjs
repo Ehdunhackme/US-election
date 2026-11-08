@@ -9,6 +9,24 @@ const report = path.join(root, "reports");
 const article = JSON.parse(
   await fs.readFile(path.join(report, "article.json"), "utf8"),
 );
+const liveConfig = {
+  predictions: JSON.parse(
+    await fs.readFile(path.join(root, "website/live/predictions.json"), "utf8"),
+  ),
+  snapshot: JSON.parse(
+    await fs.readFile(
+      path.join(root, "data/results/live-snapshot.json"),
+      "utf8",
+    ),
+  ),
+};
+const liveCore = await fs.readFile(
+  path.join(root, "website/live/core.mjs"),
+  "utf8",
+);
+const liveWidget = (
+  await fs.readFile(path.join(root, "website/live/widget.mjs"), "utf8")
+).replace(/^import\s*\{[\s\S]*?\}\s*from\s*["']\.\/core\.mjs["'];?\s*/, "");
 const escape = (value) =>
   String(value)
     .replaceAll("&", "&amp;")
@@ -56,6 +74,9 @@ footer{margin-top:56px}footer ul{padding-left:20px}footer li{margin-bottom:8px}
 let html = `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${escape(article.title)}</title><style>${mathCSS}\n${css}</style></head><body><nav aria-label="Main navigation"><a href="https://dunlichan.com/">Home</a><a href="https://dunlichan.com/about/">More about me</a><a href="https://dunlichan.com/projects/">Projects</a><a href="https://dunlichan.com/writings/">Writings</a></nav><main><article><header><h1>${escape(article.title)}</h1><p class="date">${escape(article.dateLabel)}</p><p class="note">${escape(article.note)}</p></header>`;
 let figures = 0;
 for (const block of article.blocks) {
+  if (block.type === "live")
+    html +=
+      '<div id="live-results-comparison"><noscript>Enable JavaScript to compare the fixed model with live results.</noscript></div>';
   if (block.type === "heading")
     html += `<h2 id="${escape(block.id)}">${escape(block.text)}</h2>`;
   if (block.type === "paragraph") html += `<p>${escape(block.text)}</p>`;
@@ -92,6 +113,10 @@ for (const block of article.blocks) {
 }
 html += `<footer><h2>Sources and code</h2><ul>${article.sources.map((s) => `<li><a href="${escape(s.url)}">${escape(s.label)}</a></li>`).join("")}</ul><p>${escape(article.reproducibility)}</p><p><a href="https://github.com/Ehdunhackme/US-election">Code and reproducible inputs on GitHub</a></p></footer></article></main></body></html>`;
 await fs.mkdir(path.join(root, "site"), { recursive: true });
+html = html.replace(
+  "</body>",
+  `<script type="module">${liveCore}\n${liveWidget}\nmountComparison(document.getElementById("live-results-comparison"), ${JSON.stringify(liveConfig).replaceAll("<", "\\u003c")});</script></body>`,
+);
 await fs.writeFile(path.join(root, "site/index.html"), html);
 console.log(
   `Built site/index.html with ${figures} embedded responsive figures and server-rendered LaTeX.`,

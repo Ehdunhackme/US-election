@@ -23,6 +23,7 @@ jobs:
       - run: python -m election_forecast build
       - run: python -m pytest -q
       - run: npm ci
+      - run: npm run test:live
       - run: npm run article
       - run: npm run check:article
       - run: npx playwright install --with-deps chromium

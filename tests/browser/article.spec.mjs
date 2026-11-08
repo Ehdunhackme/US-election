@@ -1,13 +1,17 @@
 import { test, expect } from "@playwright/test";
 
-test("every figure and equation renders without external assets", async ({
+test("every figure and equation renders even when the results feed fails", async ({
   page,
 }, testInfo) => {
   const external = [];
+  await page.route("https://civicapi.org/api/v2/race/*", (route) =>
+    route.abort(),
+  );
   page.on("request", (request) => {
     if (
       /^https?:/.test(request.url()) &&
-      !request.url().startsWith("http://127.0.0.1:4173/")
+      !request.url().startsWith("http://127.0.0.1:4173/") &&
+      !request.url().startsWith("https://civicapi.org/api/v2/race/")
     )
       external.push(request.url());
   });
@@ -40,7 +44,9 @@ test("every figure and equation renders without external assets", async ({
   await expect(page.locator("math")).toHaveCount(3);
   await expect(page.locator(".katex-error")).toHaveCount(0);
   await expect(
-    page.getByText(/I fixed the comparison rules before running this expanded benchmark/),
+    page.getByText(
+      /I fixed the comparison rules before running this expanded benchmark/,
+    ),
   ).toBeVisible();
   await page.evaluate(() => document.fonts.ready);
   expect(
@@ -59,7 +65,9 @@ test("every figure and equation renders without external assets", async ({
     ).toHaveCount(count);
     await page.getByText(label, { exact: true }).click();
   }
-  await page.locator("details").first().scrollIntoViewIfNeeded();
+  await page
+    .getByText("Senate predictions (35 races)", { exact: true })
+    .scrollIntoViewIfNeeded();
   await page.screenshot({
     path: testInfo.outputPath("article-race-lists.png"),
   });

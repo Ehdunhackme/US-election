@@ -51,8 +51,12 @@ npm run article
 npm run check:article
 ```
 
-Open `site/index.html` for the full article. Its charts, fonts and equations are
-embedded, so it works offline. Or run `npm run preview` for a local web server.
+Open `site/index.html` for the full article. Charts, fonts and equations work
+offline. The results comparison starts from a saved snapshot and refreshes from
+civicAPI every minute while the page is visible. No manual result updates or
+scheduled rebuilds are needed. Failed refreshes retain the last available data.
+See [how the live comparison works](docs/live-results.md).
+Or run `npm run preview` for a local web server.
 To run only the comparison, use `python -m election_forecast benchmark`.
 
 ## Where to look

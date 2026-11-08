@@ -4,6 +4,7 @@
   "version": "1.0.0",
   "type": "module",
   "scripts": {
+    "test:live": "node --test tests/live-core.test.mjs",
     "article": "node scripts/build-article.mjs",
     "check:article": "node scripts/check-article.mjs",
     "preview": "node scripts/serve-article.mjs",

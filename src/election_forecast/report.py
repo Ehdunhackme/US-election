@@ -318,6 +318,7 @@ def article(root, out, history, forecast, validation, scores, masked, meta):
         "Grey states have no Senate election this year. Florida and Ohio are included because they have special elections. The bar covers the 35 contests, not the full Senate.",
     )
 
+    blocks.append({"type": "live"})
     h("Model description", "model-description")
     p(
         "The final model is a weighted average: 75% race polling and 25% of a simple partisan baseline. If a race has no matched poll, it uses the baseline alone. I arrived at that choice by comparing 13 model families across past elections. The more complicated models did not improve on it under the scoring rule below."
@@ -493,7 +494,7 @@ def article(root, out, history, forecast, validation, scores, masked, meta):
 
     h("What this analysis cannot establish", "data-and-limitations")
     p(
-        "By November 8, AP-based result reporting had called Democratic majorities in both chambers. That context is known while writing this article, but no 2026 outcomes enter the numerical benchmark, model selection or calibration. I have not scored these estimates against the 2026 results. The November 2 cutoff uses field dates and database dates from files retrieved later. I cannot verify that every input was available in the same form before voting."
+        "By November 8, AP-based result reporting had called Democratic majorities in both chambers. That context is known while writing this article, but no 2026 outcomes enter the historical benchmark, model selection or calibration. The live comparison above scores the saved estimates against reported counts and calls separately. It does not refit the model. The November 2 cutoff uses field dates and database dates from files retrieved later. I cannot verify that every input was available in the same form before voting."
     )
     p(
         "The historical data also need care. Candidate rosters come from election returns, and the older polling archive selected the eventual top candidates. Some district presidential percentages are rounded. These are useful research inputs, but they do not recreate the exact information a forecaster had at the time."

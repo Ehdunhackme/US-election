@@ -3,6 +3,11 @@ import { renderToString } from "katex";
 import "katex/dist/katex.min.css";
 import articleData from "./midterms-2026.json";
 import styles from "./midterms-2026.module.css";
+import { LiveComparison } from "./live-comparison";
+import predictions from "./live/predictions.json";
+import snapshot from "./live/snapshot.json";
+
+const liveConfig = { predictions, snapshot };
 
 type TableBlock = {
   type: "table";
@@ -23,6 +28,7 @@ type FigureBlock = {
   mobileSrc: string;
 };
 type Block =
+  | { type: "live" }
   | { type: "heading"; text: string; id: string }
   | { type: "paragraph"; text: string }
   | { type: "equation"; text: string; latex: string }
@@ -128,6 +134,8 @@ function ArticleFigure({ block }: { block: FigureBlock }) {
 
 function renderBlock(block: Block, index: number): ReactNode {
   switch (block.type) {
+    case "live":
+      return <LiveComparison config={liveConfig} key={index} />;
     case "heading":
       return (
         <h2 id={block.id} key={index}>

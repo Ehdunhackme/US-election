@@ -74,7 +74,8 @@ not simulated, so the seat bars do not give probabilities of chamber control.
   election data. The saved inputs are not a verified real-time archive.
 - The analysis was developed after the 2026 election, with reported outcomes
   known as context. No 2026 outcomes enter the numerical benchmark, fit or
-  calibration, and the 2026 estimates have not been scored against actual results.
+  calibration. The live website now compares the fixed estimates against reported
+  2026 results separately, with uncalled races excluded from winner accuracy.
 - The November 2 cutoff is based on dates in files retrieved later. Availability
   in that exact form before Election Day is unverified.
 - Fourteen House seats follow the candidate roster without a numerical estimate.
