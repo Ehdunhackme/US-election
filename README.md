@@ -4,6 +4,8 @@ I compared **13 model families and 47 settings** on past elections, then used
 the best performer to estimate all **435 House districts and 35 Senate contests**.
 The project includes the data, benchmark, maps and a reproducible technical article.
 
+[Read the article and live results comparison](https://dunlichan.com/writings/2026-us-midterm-election-model/).
+
 **Written on November 8, after the election.** These are reconstructed estimates,
 not a forecast published before voting. No 2026 outcomes enter model selection,
 fitting or calibration. The November 2 input cutoff is not independently verified.
