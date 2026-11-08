@@ -59,17 +59,24 @@ class Figures:
             wspace=0.3,
         )
         heading = textwrap.fill(title, 42 if self.mobile else 95)
-        fig.text(0.025, 1 - 0.08 / height, heading, va="top", fontsize=15 if self.mobile else 17)
-        header_lines = heading.count("\n") + 1
+        heading_text = fig.text(
+            0.025, 1 - 0.08 / height, heading, va="top", fontsize=15 if self.mobile else 17
+        )
+        fig.canvas.draw()
+        heading_bottom = heading_text.get_window_extent().y0 / fig.bbox.height
         sub = textwrap.fill(subtitle, 53 if self.mobile else 110)
-        fig.text(
+        subtitle_text = fig.text(
             0.025,
-            1 - (0.08 + header_lines * 0.24 + 0.08) / height,
+            heading_bottom - 0.1 / height,
             sub,
             va="top",
             fontsize=10.8,
             color=self.muted,
         )
+        fig.canvas.draw()
+        # Wrapped headers move the plotting area down, with room for panel titles.
+        header_bottom = subtitle_text.get_window_extent().y0 / fig.bbox.height
+        fig.subplots_adjust(top=header_bottom - 0.52 / height)
         return (fig, list(axes.flat))
 
     def clean(self, ax, axis="x"):
@@ -116,14 +123,16 @@ class Figures:
             ax.set_ylabel("Races")
         # Give the legend its own line between the subtitle and the data.
         height = fig.get_figheight()
-        fig.subplots_adjust(top=1 - (1.35 if self.mobile else 1.15) / height)
+        header_bottom = fig.texts[1].get_window_extent().y0 / fig.bbox.height
+        legend_top = header_bottom - 0.12 / height
+        fig.subplots_adjust(top=legend_top - 0.45 / height)
         handles, labels = ax.get_legend_handles_labels()
         fig.legend(
             handles,
             labels,
             frameon=False,
             loc="upper left",
-            bbox_to_anchor=(0.025, 1 - (0.85 if self.mobile else 0.65) / height),
+            bbox_to_anchor=(0.025, legend_top),
             borderaxespad=0,
             ncol=2,
             fontsize=10,
@@ -198,7 +207,7 @@ class Figures:
                 ax.remove()
             axes = list(fig.subplots(2, 2).flat)
             fig.subplots_adjust(
-                left=0.09, right=0.96, top=0.86, bottom=0.08, hspace=0.5, wspace=0.25
+                left=0.09, right=0.96, bottom=0.08, hspace=0.5, wspace=0.25
             )
         for i, chamber in enumerate(["house", "senate"]):
             g = rows[rows.chamber.eq(chamber)]

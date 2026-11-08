@@ -26,7 +26,11 @@ const liveCore = await fs.readFile(
 );
 const liveWidget = (
   await fs.readFile(path.join(root, "website/live/widget.mjs"), "utf8")
-).replace(/^import\s*\{[\s\S]*?\}\s*from\s*["']\.\/core\.mjs["'];?\s*/, "");
+).replace(/^import\s*\{[^}]+\}\s*from\s*["'][^"']+["'];?\s*/gm, "");
+const disclosure = await fs.readFile(
+  path.join(root, "website/live/disclosure.mjs"),
+  "utf8",
+);
 const escape = (value) =>
   String(value)
     .replaceAll("&", "&amp;")
@@ -65,7 +69,7 @@ p{margin:0 0 20px}a{color:inherit;text-underline-offset:3px}figure{width:100%;ma
 figure picture,figure img{display:block;width:100%;height:auto}figcaption{font-size:13px;line-height:1.6;color:#969696;margin:14px 0 0;max-width:74ch}
 .equation{overflow-x:auto;padding:24px 8px;margin:24px 0 32px;color:#e6e6e6;font-size:17px}.katex-display{margin:0;width:max-content;min-width:100%}
 .table{overflow:auto;margin:24px 0}table{width:100%;border-collapse:collapse;font-size:13px;line-height:1.55}th,td{padding:12px 14px;text-align:left;min-width:90px;vertical-align:top}thead th{border-bottom:1px solid #383838}th{color:#eee;font-weight:500}th:first-child,td:first-child{padding-left:0}
-details{border:0;margin:8px 0}summary{cursor:pointer;padding:10px 0;min-height:44px;color:#eee;font-weight:500}summary::marker{color:#969696;font-size:.75em}summary:hover{text-decoration:underline;text-underline-offset:4px}
+details{border:0;margin:8px 0}summary{display:flex;align-items:center;gap:16px;width:fit-content;max-width:100%;cursor:pointer;padding:10px 12px;min-height:44px;border:1px solid #565656;border-radius:4px;color:#eee;font-weight:500;list-style:none}summary::-webkit-details-marker{display:none}summary::after{content:"+";margin-left:auto}details[open]>summary::after{content:"−"}summary:hover{border-color:#aaa9a6;background:#222}details.is-animating{overflow:hidden}.disclosure-body{display:flow-root}
 footer{margin-top:48px}.downloads{display:flex;flex-wrap:wrap;gap:8px 24px;margin:0 0 28px;font-size:14px}.source-groups{font-size:13px;line-height:1.7;margin:0}.source-groups>div{display:grid;grid-template-columns:112px minmax(0,1fr);gap:16px;margin-bottom:16px}.source-groups dt{font-weight:500;color:#aaa9a6}.source-groups dd{display:flex;flex-wrap:wrap;gap:4px 16px;margin:0}
 :focus-visible{outline:2px solid #8ab4ff;outline-offset:4px}
 @media(max-width:900px){figure{width:100%;margin-left:0;margin-right:0}}
@@ -103,12 +107,12 @@ for (const block of article.blocks) {
   }
   if (block.type === "table") {
     if (block.summary)
-      html += `<details><summary>${escape(block.summary)}</summary>`;
+      html += `<details><summary>${escape(block.summary)}</summary><div class="disclosure-body">`;
     html += `<div class="table" role="region" tabindex="0" aria-label="${escape(block.summary || block.columns[0] + " table")}"><table><thead><tr>${block.columns.map((c) => `<th scope="col">${escape(c)}</th>`).join("")}</tr></thead><tbody>`;
     for (const row of block.rows)
       html += `<tr>${row.map((v, i) => `<${i === 0 ? 'th scope="row"' : "td"}>${escape(typeof v === "number" && !Number.isInteger(v) ? v.toFixed(3).replace(/0+$/, "").replace(/\.$/, "") : v)}</${i === 0 ? "th" : "td"}>`).join("")}</tr>`;
     html += `</tbody></table></div>`;
-    if (block.summary) html += `</details>`;
+    if (block.summary) html += `</div></details>`;
   }
 }
 const groups = [...new Set(article.sources.map((source) => source.group))];
@@ -128,7 +132,7 @@ html += `<footer><h2>Sources and code</h2><div class="downloads"><a href="https:
 await fs.mkdir(path.join(root, "site"), { recursive: true });
 html = html.replace(
   "</body>",
-  `<script type="module">${liveCore}\n${liveWidget}\nmountComparison(document.getElementById("live-results-comparison"), ${JSON.stringify(liveConfig).replaceAll("<", "\\u003c")});</script></body>`,
+  `<script type="module">${disclosure}\n${liveCore}\n${liveWidget}\nmountComparison(document.getElementById("live-results-comparison"), ${JSON.stringify(liveConfig).replaceAll("<", "\\u003c")});document.querySelectorAll("article > details").forEach(mountDisclosure);</script></body>`,
 );
 await fs.writeFile(path.join(root, "site/index.html"), html);
 console.log(
