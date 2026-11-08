@@ -1,8 +1,9 @@
-# 2026 US election model
+# Modelling the 2026 midterms
 
 I compared **13 model families and 47 settings** on past elections, then used
 the best performer to estimate all **435 House districts and 35 Senate contests**.
 The project includes the data, benchmark, maps and a reproducible technical article.
+The portfolio keeps its own display files and runs without this repository.
 
 [Read the article and live results comparison](https://dunlichan.com/writings/2026-us-midterm-election-model/).
 

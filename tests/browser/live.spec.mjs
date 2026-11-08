@@ -68,6 +68,8 @@ test("live comparison refreshes, filters, preserves estimates and survives outag
   const widget = page.locator("#live-results-comparison");
   await expect(widget.getByRole("status")).toContainText("Checked");
   await expect(widget.locator(".metrics")).toContainText("399 / 413");
+  await expect(widget.locator("tbody tr")).toHaveCount(10);
+  await expect(widget.locator(".pages")).toContainText("1–10 of 435 races");
   await widget.getByRole("button", { name: "Senate · 35 contests" }).click();
   await expect(widget.locator(".metrics")).toContainText("31 / 33");
   await expect(widget.locator(".metrics")).toContainText("3.32 pp");

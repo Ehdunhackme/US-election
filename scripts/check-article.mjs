@@ -15,6 +15,10 @@ assert(!/<(?:img|source)\b[^>]+(?:src|srcset)="https?:/i.test(html));
 assert(!/\u2014/.test(html));
 assert(html.includes("House predictions (435 races)"));
 assert(html.includes("Senate predictions (35 races)"));
+assert(html.includes("Modelling the 2026 midterms"));
+assert(html.includes("https://github.com/Ehdunhackme/US-election"));
+assert(!html.includes("Unofficial until certified"));
+assert(html.includes('class="source-groups"'));
 console.log(
   "Article checks passed: 10 embedded figures, 3 rendered equations, all 470 races and the live comparison.",
 );

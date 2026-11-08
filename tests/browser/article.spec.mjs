@@ -44,9 +44,7 @@ test("every figure and equation renders even when the results feed fails", async
   await expect(page.locator("math")).toHaveCount(3);
   await expect(page.locator(".katex-error")).toHaveCount(0);
   await expect(
-    page.getByText(
-      /I fixed the comparison rules before running this expanded benchmark/,
-    ),
+    page.getByText(/The benchmark covers 13 families and 47 settings/),
   ).toBeVisible();
   await page.evaluate(() => document.fonts.ready);
   expect(

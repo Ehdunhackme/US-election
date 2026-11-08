@@ -58,18 +58,18 @@ const css = `
 html{color-scheme:dark}body{margin:0;background:#1a1a1a;color:#c2c2c2;font:16px/1.75 Geist,system-ui,sans-serif}
 nav{max-width:780px;margin:auto;padding:28px 22px;display:flex;gap:26px;font-size:14px}
 nav a{color:#a7a7a7;text-decoration:none}nav a:last-child{color:#f5f5f5}
-main{max-width:780px;margin:auto;padding:44px 22px 96px}h1{font-size:32px;line-height:1.3;letter-spacing:-.02em;color:#f5f5f5;margin:0 0 16px}
+main{max-width:calc(70ch + 44px);margin:auto;padding:44px 22px 96px}h1{font-size:32px;line-height:1.2;letter-spacing:-.025em;color:#f5f5f5;margin:0 0 16px}
 header{margin-bottom:36px}.date,.note{color:#969696;font-size:13px;margin:6px 0}
-h2{font-size:23px;line-height:1.35;color:#f5f5f5;margin:64px 0 20px}header+h2{margin-top:0}
-p{margin:0 0 20px;max-width:70ch}a{color:#8ab4ff}figure{width:calc(100% + 96px);margin:36px -48px 48px}
+h2{font-size:20px;line-height:1.4;color:#f5f5f5;margin:48px 0 16px}header+h2{margin-top:0}
+p{margin:0 0 20px}a{color:inherit;text-underline-offset:3px}figure{width:100%;margin:28px 0 40px}
 figure picture,figure img{display:block;width:100%;height:auto}figcaption{font-size:13px;line-height:1.6;color:#969696;margin:14px 0 0;max-width:74ch}
 .equation{overflow-x:auto;padding:24px 8px;margin:24px 0 32px;color:#e6e6e6;font-size:17px}.katex-display{margin:0;width:max-content;min-width:100%}
 .table{overflow:auto;margin:24px 0}table{width:100%;border-collapse:collapse;font-size:13px;line-height:1.55}th,td{padding:12px 14px;text-align:left;min-width:90px;vertical-align:top}thead th{border-bottom:1px solid #383838}th{color:#eee;font-weight:500}th:first-child,td:first-child{padding-left:0}
 details{border:0;margin:8px 0}summary{cursor:pointer;padding:10px 0;min-height:44px;color:#eee;font-weight:500}summary::marker{color:#969696;font-size:.75em}summary:hover{text-decoration:underline;text-underline-offset:4px}
-footer{margin-top:56px}footer ul{padding-left:20px}footer li{margin-bottom:8px}
+footer{margin-top:48px}.downloads{display:flex;flex-wrap:wrap;gap:8px 24px;margin:0 0 28px;font-size:14px}.source-groups{font-size:13px;line-height:1.7;margin:0}.source-groups>div{display:grid;grid-template-columns:112px minmax(0,1fr);gap:16px;margin-bottom:16px}.source-groups dt{font-weight:500;color:#aaa9a6}.source-groups dd{display:flex;flex-wrap:wrap;gap:4px 16px;margin:0}
 :focus-visible{outline:2px solid #8ab4ff;outline-offset:4px}
 @media(max-width:900px){figure{width:100%;margin-left:0;margin-right:0}}
-@media(max-width:640px){main{padding-top:24px}nav{gap:20px;font-size:12px}h1{font-size:28px}h2{font-size:21px;margin-top:44px}figure{margin-block:28px 36px}.equation{font-size:13px;padding:20px 4px}p{margin-bottom:20px}}
+@media(max-width:640px){main{padding-top:24px}nav{gap:20px;font-size:12px}h1{font-size:28px}h2{font-size:20px;margin-top:40px}figure{margin-block:24px 32px}.equation{font-size:13px;padding:16px 0}p{margin-bottom:20px}.source-groups>div{grid-template-columns:1fr;gap:4px;margin-bottom:20px}}
 `;
 let html = `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${escape(article.title)}</title><style>${mathCSS}\n${css}</style></head><body><nav aria-label="Main navigation"><a href="https://dunlichan.com/">Home</a><a href="https://dunlichan.com/about/">More about me</a><a href="https://dunlichan.com/projects/">Projects</a><a href="https://dunlichan.com/writings/">Writings</a></nav><main><article><header><h1>${escape(article.title)}</h1><p class="date">${escape(article.dateLabel)}</p><p class="note">${escape(article.note)}</p></header>`;
 let figures = 0;
@@ -111,7 +111,20 @@ for (const block of article.blocks) {
     if (block.summary) html += `</details>`;
   }
 }
-html += `<footer><h2>Sources and code</h2><ul>${article.sources.map((s) => `<li><a href="${escape(s.url)}">${escape(s.label)}</a></li>`).join("")}</ul><p>${escape(article.reproducibility)}</p><p><a href="https://github.com/Ehdunhackme/US-election">Code and reproducible inputs on GitHub</a></p></footer></article></main></body></html>`;
+const groups = [...new Set(article.sources.map((source) => source.group))];
+const downloadRoot = "https://dunlichan.com/assets/writings/midterms-2026";
+html += `<footer><h2>Sources and code</h2><div class="downloads"><a href="https://github.com/Ehdunhackme/US-election">Model code and data</a><a href="${downloadRoot}/2026-estimates.csv">Estimates CSV</a><a href="${downloadRoot}/benchmark-leaderboard.csv">Benchmark CSV</a></div><dl class="source-groups">${groups
+  .map(
+    (group) =>
+      `<div><dt>${escape(group)}</dt><dd>${article.sources
+        .filter((source) => source.group === group)
+        .map(
+          (source) =>
+            `<a href="${escape(source.url)}">${escape(source.label)}</a>`,
+        )
+        .join("")}</dd></div>`,
+  )
+  .join("")}</dl></footer></article></main></body></html>`;
 await fs.mkdir(path.join(root, "site"), { recursive: true });
 html = html.replace(
   "</body>",
