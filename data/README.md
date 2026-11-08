@@ -14,7 +14,8 @@ The reference files support reconstruction of the features:
   not a complete raw survey archive. House 2024 polling is unavailable.
 - `generic-ballot-2026.csv` preserves national polling questions used at the cutoff.
 - `nominees-2026.csv` is the October 8 Clerk-document extraction. The preparation
-  code corrects 28 fusion-party parsing issues; the source lines and fixes are
+  code corrects 28 fusion-party parsing issues and removes a party description
+  from Nadia Donya Milleron's name; the source lines and all 29 fixes are
   recorded in `results/roster-corrections.json`.
 
 `sources.json` records the URLs, retrieval timestamps and hashes for raw files
@@ -34,3 +35,7 @@ and backtests remain development diagnostics.
 
 Snapshot CSVs use LF line endings. `snapshot-sha256.json` verifies these normalized
 repository files; upstream download hashes remain separate in `sources.json`.
+
+The November 8 accuracy review also preserves Alan Aversa's No Labels party
+as `NOL`, instead of calling him independent. Empty opponent slots have no party
+label. Rebuilding the target snapshot changed no numeric model inputs.

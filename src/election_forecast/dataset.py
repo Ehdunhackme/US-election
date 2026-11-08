@@ -193,9 +193,46 @@ def corrected_roster(root):
                 }
             )
             roster.loc[i, ["candidate", "party"]] = [candidate, party]
+        if row.candidate.endswith(", Independent") and row.party_label == "Unenrolled":
+            candidate = row.candidate.removesuffix(", Independent")
+            roster.loc[i, "candidate"] = candidate
+            corrections.append(
+                {
+                    "state": row.state,
+                    "district": int(row.district),
+                    "before": row.candidate,
+                    "candidate": candidate,
+                    "party": row.party,
+                    "source_line": row.source_line,
+                }
+            )
     for col in ["special", "incumbent_marker"]:
         roster[col] = roster[col].astype(str).str.lower().eq("true")
     return roster, corrections
+
+
+def ballot_party(candidates):
+    """Keep a named minor party distinct from an independent candidacy."""
+    if candidates.empty:
+        return None
+    if candidates.party.eq("DEM").all():
+        return "DEM"
+    if candidates.party.eq("REP").all():
+        return "REP"
+    labels = candidates.party_label.unique()
+    if len(labels) != 1:
+        return "OTHER"
+    label = labels[0]
+    if label in {
+        "Independent",
+        "Nonpartisan",
+        "Unenrolled",
+        "By Petition",
+        "No Party",
+        "No Party Affiliation",
+    }:
+        return "IND"
+    return {"No Labels Party": "NOL", "Green": "GRN", "Libertarian": "LIB"}.get(label, label)
 
 
 def candidate_matches(name, candidates):
@@ -292,6 +329,11 @@ def target_data(root):
             kind += "; first-preference proxy"
         if state == "LA" and chamber == "house":
             kind = "Party aggregate; runoff possible"
+        left_party, right_party = ballot_party(left), ballot_party(right)
+        if "Independent transfer" in kind and any(
+            party not in {None, "DEM", "REP", "IND"} for party in [left_party, right_party]
+        ):
+            kind = kind.replace("Independent transfer", "Minor-party transfer")
         left_names, right_names = left.candidate.tolist(), right.candidate.tolist()
         question_rows = []
         if fixed is None:
@@ -359,8 +401,8 @@ def target_data(root):
                 "rep_incumbent": int(right.incumbent_marker.any()),
                 "left_candidate": " / ".join(left_names),
                 "right_candidate": " / ".join(right_names),
-                "left_party": "DEM" if left.party.eq("DEM").all() else "IND",
-                "right_party": "REP" if right.party.eq("REP").all() else "IND",
+                "left_party": left_party,
+                "right_party": right_party,
                 "poll_dem_share": summary["poll_dem_share"] if summary else np.nan,
                 "poll_questions": len(question_rows),
                 "fixed_party": fixed,

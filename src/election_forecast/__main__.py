@@ -11,6 +11,7 @@ import joblib
 import pandas as pd
 
 from .model import run
+from .audit import validation_benchmarks
 from .report import article, render_figures
 
 
@@ -38,6 +39,7 @@ def main():
         flush=True,
     )
     forecast, validation, scores, masked, residuals, meta, model = run(history, target)
+    validation_benchmarks(validation).to_csv(out / "validation-benchmarks.csv", index=False)
     for frame, name in [
         (history, "training-data.csv"),
         (target, "2026-feature-snapshots.csv"),

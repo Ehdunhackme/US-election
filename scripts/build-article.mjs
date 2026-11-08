@@ -43,12 +43,12 @@ nav a{color:#a7a7a7;text-decoration:none}nav a:last-child{color:#f5f5f5}
 main{max-width:780px;margin:auto;padding:44px 22px 96px}h1{font-size:32px;line-height:1.3;letter-spacing:-.02em;color:#f5f5f5;margin:0 0 16px}
 header{margin-bottom:36px}.date,.note{color:#969696;font-size:13px;margin:6px 0}
 h2{font-size:23px;line-height:1.35;color:#f5f5f5;margin:64px 0 20px}header+h2{margin-top:0}
-p{margin:0 0 22px;max-width:70ch}a{color:#8ab4ff}figure{width:calc(100% + 96px);margin:36px -48px 48px}
+p{margin:0 0 20px;max-width:70ch}a{color:#8ab4ff}figure{width:calc(100% + 96px);margin:36px -48px 48px}
 figure picture,figure img{display:block;width:100%;height:auto}figcaption{font-size:13px;line-height:1.6;color:#969696;margin:14px 0 0;max-width:74ch}
 .equation{overflow-x:auto;padding:24px 8px;margin:24px 0 32px;color:#e6e6e6;font-size:17px}.katex-display{margin:0;width:max-content;min-width:100%}
-.table{overflow:auto;margin:24px 0}table{width:100%;border-collapse:collapse;font-size:13px;line-height:1.55}th,td{padding:12px 14px;border-bottom:1px solid #383838;text-align:left;min-width:90px;vertical-align:top}th{color:#eee;font-weight:500}th:first-child,td:first-child{padding-left:0}
-details{border-block:1px solid #383838;margin:24px 0}summary{cursor:pointer;padding:16px 0;color:#eee}
-footer{margin-top:56px;border-top:1px solid #383838}footer ul{padding-left:20px}footer li{margin-bottom:8px}
+.table{overflow:auto;margin:24px 0}table{width:100%;border-collapse:collapse;font-size:13px;line-height:1.55}th,td{padding:12px 14px;text-align:left;min-width:90px;vertical-align:top}thead th{border-bottom:1px solid #383838}th{color:#eee;font-weight:500}th:first-child,td:first-child{padding-left:0}
+details{border:0;margin:8px 0}summary{cursor:pointer;padding:10px 0;min-height:44px;color:#eee;font-weight:500}summary::marker{color:#969696;font-size:.75em}summary:hover{text-decoration:underline;text-underline-offset:4px}
+footer{margin-top:56px}footer ul{padding-left:20px}footer li{margin-bottom:8px}
 :focus-visible{outline:2px solid #8ab4ff;outline-offset:4px}
 @media(max-width:900px){figure{width:100%;margin-left:0;margin-right:0}}
 @media(max-width:640px){main{padding-top:24px}nav{gap:20px;font-size:12px}h1{font-size:28px}h2{font-size:21px;margin-top:44px}figure{margin-block:28px 36px}.equation{font-size:13px;padding:20px 4px}p{margin-bottom:20px}}

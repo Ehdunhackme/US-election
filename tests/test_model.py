@@ -4,7 +4,7 @@ import numpy as np
 import pandas as pd
 import pytest
 
-from election_forecast.dataset import corrected_roster, district_leans
+from election_forecast.dataset import ballot_party, corrected_roster, district_leans
 from election_forecast.model import design, run
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -22,10 +22,14 @@ def test_roster_covers_the_actual_ballot_and_fusion_parties():
         lambda g: g[["state", "district", "special"]].drop_duplicates().shape[0],
         include_groups=False,
     ).to_dict() == {"house": 435, "senate": 35}
-    assert len(fixes) == 28
+    assert len(fixes) == 29
     ny = roster[roster.state.eq("NY") & roster.district.eq(7)]
     assert ny.set_index("candidate").loc["Claire Valdez", "party"] == "DEM"
     assert ny.set_index("candidate").loc["Melvin Rivera", "party"] == "REP"
+    assert "Nadia Donya Milleron" in roster.candidate.values
+    assert not roster.candidate.str.endswith(", Independent").any()
+    aversa = roster[roster.candidate.eq("Alan Aversa")]
+    assert ballot_party(aversa) == "NOL"
 
 
 def test_full_outputs_keep_unpolled_special_independent_and_fixed_races():
@@ -33,6 +37,7 @@ def test_full_outputs_keep_unpolled_special_independent_and_fixed_races():
     assert len(f) == 470 and f.race_id.is_unique
     assert f[f.chamber.eq("house")].state.nunique() == 50
     assert f.projected_party.notna().all()
+    assert f.set_index("label").loc["AZ-03", "right_party"] == "NOL"
     s = f[f.chamber.eq("senate")].set_index("state")
     assert s.loc[["FL", "OH"], "special"].all()
     assert s.loc[["AK", "ME", "LA", "NE", "ID"], "prediction"].notna().all()

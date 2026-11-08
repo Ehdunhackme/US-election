@@ -55,6 +55,27 @@ Validation moves forward through 2018, 2020, 2022 and 2024. Each test election i
 excluded from its own training, preprocessing and parameter selection. An
 additional backtest withholds every race poll to check the unpolled setting.
 
+## Accuracy checks
+
+The model has not established an advantage over a simple benchmark. On the
+same held-out races, adding local presidential lean to national generic-ballot
+share gives lower mean absolute error in both chambers:
+
+| Chamber | Elastic-net MAE | Simple baseline MAE |
+| ------- | --------------: | ------------------: |
+| House   |         3.70 pp |             2.72 pp |
+| Senate  |         4.04 pp |             3.50 pp |
+
+The model's D/R ordering accuracy is 94.6% for the House and 91.0% for the
+Senate overall. Among races it puts between 45% and 55% Democratic share,
+that falls to 69.2% over 195 House races and 69.6% over 23 Senate races.
+These figures pool the 2018–2024 test races. They do not measure accuracy
+against 2026 results, which have not been scored here.
+
+See the [paired benchmark results](results/validation-benchmarks.csv) and
+[accuracy review](docs/accuracy-review.md). This is a research exercise;
+the seat totals should not be presented as dependable calls for chamber control.
+
 ## Results and interpretation
 
 The saved point projections are **219 Democratic / 216 Republican House seats**
@@ -69,8 +90,9 @@ Seat bars count point-estimate leaders, not expected seats or probabilities of
 chamber control. The House map colors states by projected seat plurality, with
 stripes for ties. The Senate map marks states without an election in grey.
 
-Single-party ballots determine the party outcome without an invented vote share.
-Independent opposition uses a labeled partisan-baseline transfer. Alaska and Maine
+Seats where every listed candidate belongs to one party are assigned from the
+saved roster, without an invented vote share. Independent and minor-party
+opposition uses a labeled partisan-baseline transfer. Alaska and Maine
 use first-preference proxies; Louisiana House estimates aggregate parties before
 any runoff. These treatments are not validated candidate-level win models, and
 their candidate-win probabilities are not reported. Historical D/R error ranges

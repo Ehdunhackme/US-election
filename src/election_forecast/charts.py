@@ -98,7 +98,7 @@ class Figures:
         )
         fig, (ax,) = self.canvas(
             "Training data across election years",
-            "Polled congressional races with a usable one-day snapshot",
+            "D/R races with the required fundamentals, with or without polling",
             panel_height=3.3,
         )
         if self.mobile:

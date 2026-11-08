@@ -39,6 +39,9 @@ test("every figure and equation renders without external assets", async ({
   expect(sources.current).toBe(narrow ? sources.mobile : sources.desktop);
   await expect(page.locator("math")).toHaveCount(3);
   await expect(page.locator(".katex-error")).toHaveCount(0);
+  await expect(
+    page.getByText(/There is no basis here for calling the regression/),
+  ).toBeVisible();
   await page.evaluate(() => document.fonts.ready);
   expect(
     await page.evaluate(
@@ -56,6 +59,10 @@ test("every figure and equation renders without external assets", async ({
     ).toHaveCount(count);
     await page.getByText(label, { exact: true }).click();
   }
+  await page.locator("details").first().scrollIntoViewIfNeeded();
+  await page.screenshot({
+    path: testInfo.outputPath("article-race-lists.png"),
+  });
   await page.evaluate(() => window.scrollTo(0, 0));
   await page.screenshot({ path: testInfo.outputPath("article-top.png") });
   await page
