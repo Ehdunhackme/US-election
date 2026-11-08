@@ -99,7 +99,7 @@ class Figures:
         fig, (ax,) = self.canvas(
             "Training data across election years",
             "D/R races with the required fundamentals, with or without polling",
-            panel_height=3.3,
+            panel_height=3.7 if self.mobile else 3.5,
         )
         if self.mobile:
             y = np.arange(len(counts))
@@ -114,7 +114,22 @@ class Figures:
             ax.bar(x + 0.17, counts.senate, width=0.3, color=self.neutral, label="Senate")
             ax.set_xticks(x, counts.index)
             ax.set_ylabel("Races")
-        ax.legend(frameon=False, loc="upper right", ncol=2, fontsize=10)
+        # Give the legend its own line between the subtitle and the data.
+        height = fig.get_figheight()
+        fig.subplots_adjust(top=1 - (1.35 if self.mobile else 1.15) / height)
+        handles, labels = ax.get_legend_handles_labels()
+        fig.legend(
+            handles,
+            labels,
+            frameon=False,
+            loc="upper left",
+            bbox_to_anchor=(0.025, 1 - (0.85 if self.mobile else 0.65) / height),
+            borderaxespad=0,
+            ncol=2,
+            fontsize=10,
+            handlelength=1.6,
+            columnspacing=1.6,
+        )
         self.clean(ax, "x" if self.mobile else "y")
         if not self.mobile:
             ax.set_xticks(np.arange(len(counts)), counts.index)
