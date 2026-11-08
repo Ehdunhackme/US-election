@@ -1,68 +1,88 @@
-# Accuracy review, 8 November 2026
+# Accuracy review
 
-The code reproduces its saved estimates. That does not establish that the
-2026 predictions are right. This review checks the frozen inputs, reported
-historical scores and selected source claims; it does not verify every survey
-or compare the projections with 2026 election outcomes.
+Updated 8 November 2026 after the expanded historical comparison.
 
-## What the historical tests show
+## Selected model
 
-The paired comparison uses the same 1,603 House and 122 Senate test races
-from 2018, 2020, 2022 and 2024. Each race has equal weight. The simple benchmark
-is local presidential lean plus national Democratic generic-ballot share,
-clipped to 0–100, with no fitted coefficients.
+The poll/baseline blend ranks first among 13 model families and 47 settings.
+The final polling weight is 0.75. An unpolled race receives the baseline: local
+presidential lean plus national Democratic generic-ballot share, clipped to 0–100.
+The previous direct elastic-net model remains in the comparison, but no longer
+produces the published estimates.
 
-| Chamber | Method          | MAE, pp | RMSE, pp |
-| ------- | --------------- | ------: | -------: |
-| House   | Elastic net     |    3.70 |     4.88 |
-| House   | Simple baseline |    2.72 |     3.81 |
-| Senate  | Elastic net     |    4.04 |     5.52 |
-| Senate  | Simple baseline |    3.50 |     5.72 |
+Selection uses mean absolute error (MAE), equally averaged over the House,
+Senate and four test elections: 2018, 2020, 2022 and 2024. The winning score is
+2.5666 percentage points versus 3.1054 for the baseline, a 17.3% reduction.
+Each family chooses its settings from earlier cycles before predicting a test
+year. Final settings use the completed tuning cycles from 2014 through 2024.
 
-The benchmark has lower MAE in both chambers and lower House RMSE. Elastic
-net has slightly lower Senate RMSE. The analysis does not support calling
-elastic net the best model for these inputs.
+| Test year | House blend | House baseline | Senate blend | Senate baseline |
+| :--- | ---: | ---: | ---: | ---: |
+| 2018 | 2.55 | 2.85 | 1.77 | 4.98 |
+| 2020 | 3.34 | 3.29 | 3.16 | 2.61 |
+| 2022 | 2.46 | 2.56 | 2.50 | 2.93 |
+| 2024 | 2.18 | 2.18 | 2.58 | 3.45 |
 
-Overall D/R ordering accuracy is 94.6% for the House and 91.0% for the Senate.
-Restricting to model estimates between 45% and 55% lowers it to 69.2% of 195
-House races and 69.6% of 23 Senate races. These are party-ordering checks,
-not guarantees about candidate winners or chamber control.
+All entries are MAE in two-party vote-share percentage points. The blend loses
+in both chambers in 2020. The 2024 House inputs contain no race polls, so the
+blend and baseline are identical. Leaving out any one test election still gives
+the blend first place. This sensitivity check does not supply an independent test.
 
-Probability and interval validation covers only 2022 and 2024. The nominal
-95% Senate ranges cover 89.7% of the 2022 outcomes. There is too little
-independent validation to claim dependable calibration.
+## Selection and interpretation
 
-The benchmark comparison was added during this review, after the model was
-developed. The chronological backtests remain development diagnostics.
+The 2.57-point score describes a family chosen after comparing its historical
+results with other families. A separate sequential selection policy chooses the
+family using earlier cycles only. It selects support-vector correction in 2018,
+then the blend in 2020, 2022 and 2024. Its score is 2.9272 points, about 5.7% below
+the baseline. Do not substitute the winner's larger improvement for this check.
 
-## Source and presentation corrections
+Earlier versions of the project already inspected these historical elections.
+They are development data, not a pristine holdout. The finite grid and scoring
+rule were fixed before this expanded run; no new candidates were added after
+seeing the leaderboard. The candidate families include direct and residual
+regressions, robust models, trees, boosting, support-vector regression and the
+simple polling blend. A residual model learns a correction to the baseline.
 
-- The [House Clerk's roster](https://clerk.house.gov/member_info/electionInfo/2026/120-nominations.pdf)
-  lists Alan Aversa under No Labels, not as independent. His output party is now
-  `NOL`. Nadia Donya Milleron's party description is no longer part of her name.
-- The training chart now says that it includes polled and unpolled races. Of
-  the 3,063 training rows, 2,208 have no race poll.
-- The forecast contains 435 House contests across 50 states and 35 Senate
-  contests. Fourteen House seats are assigned from a same-party roster, rather
-  than given invented vote shares. This assumes no unlisted candidate or later
-  ballot change alters that assignment.
-- Louisiana's [official rules](https://www.sos.la.gov/elections-voting/how-candidates-are-elected)
-  confirm that House elections still use an open primary in 2026, while Senate
-  elections use the closed-party-primary system. House party totals are not
-  runoff-winner probabilities.
-- Independent and minor-party transfers and ranked-choice proxies have not
-  been validated as candidate-win models. Their probability fields remain empty.
+The old direct elastic net retains its original fitting procedure, while its
+settings are evaluated under this benchmark's common chronological MAE rule.
+Its scores therefore differ from the previous article, which selected settings
+using RMSE and a different initial tuning history. All methods share the same
+test rows and ranking rule. New learned competitors balance training weight
+between chambers and split each polled race's weight between visible and hidden
+polling copies. The full grid is in the benchmark manifest.
 
-Rebuilding the 2026 snapshot changed labels only. Vote-share estimates and
-seat totals are unchanged.
+## Close races and uncertainty
 
-## Timing limits
+Every model is assessed on the same close-race subset: baseline predictions
+from 45% to 55%. The blend orders the D/R candidates correctly in 83.7% of
+343 House races and 76.3% of 38 Senate races. The baseline gets 81.3% and 63.2%.
+These percentages pool races; they do not use the equal-cycle weighting of the
+selection score. The Senate sample is too small to support a strong general claim.
 
-The files were collected and the model was built after the November 3 election.
-No 2026 outcomes enter training, parameter selection or validation. The November
-2 cutoff uses field and database dates, which cannot prove that every input
-was publicly available in the same form before voting. Older polling archives
-also select eventual top candidates retrospectively.
+Ranges and probabilities use the selected family's earlier chronological errors,
+grouped by chamber and polling availability, with equal weight per election.
+A group with fewer than two prior cycles uses its chamber's full error history.
+The nominal 95% House ranges cover more than 98% in every test year and are
+wide. This is not evidence of exact calibration. Shared national errors are
+not simulated, so the seat bars do not give probabilities of chamber control.
 
-The article now states these limits near the results and in its methods.
-It does not claim that this was a published pre-election forecast.
+## Data limits
+
+- History includes 3,063 D/R races through 2024. It excludes uncontested,
+  same-party and special elections. Some historical races lack required inputs.
+- Roster and older polling reconstruction use information recorded in final
+  election data. The saved inputs are not a verified real-time archive.
+- The analysis was developed after the 2026 election, with reported outcomes
+  known as context. No 2026 outcomes enter the numerical benchmark, fit or
+  calibration, and the 2026 estimates have not been scored against actual results.
+- The November 2 cutoff is based on dates in files retrieved later. Availability
+  in that exact form before Election Day is unverified.
+- Fourteen House seats follow the candidate roster without a numerical estimate.
+  Independent and minor-party transfers, first-preference RCV proxies and
+  Louisiana House party totals are not validated candidate-level win models.
+  Candidate-win probabilities are suppressed for these treatments.
+
+See the [protocol](benchmark-protocol.md), [full leaderboard](../results/benchmark/leaderboard.csv),
+[cycle scores](../results/benchmark/cycle-scores.csv),
+[selection policy](../results/benchmark/selection-policy.csv) and
+[paired close-race checks](../results/validation-benchmarks.csv).

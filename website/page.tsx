@@ -4,7 +4,7 @@ import { MidtermArticle } from "@/content/midterms-2026";
 export const metadata: Metadata = {
   title: { absolute: "2026 US Midterm Election Model | Dun Li Chan" },
   description:
-    "One elastic-net model covering all 435 House districts and all 35 Senate contests, with multi-year training and historical validation.",
+    "Comparing 13 election models across past elections, then applying the selected poll/baseline blend to all 435 House districts and 35 Senate contests.",
   alternates: { canonical: "/writings/2026-us-midterm-election-model/" },
   openGraph: {
     type: "article",

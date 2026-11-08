@@ -6,13 +6,13 @@ import pandas as pd
 from .statistics import score_predictions
 
 
-def validation_benchmarks(validation):
+def validation_benchmarks(validation, model_name="Poll/baseline blend"):
     rows = []
     for chamber, group in validation.groupby("chamber"):
         # Local presidential lean is already relative to the national share.
         baseline = np.clip(group.partisan_lean + group.generic_dem_share, 0, 100)
-        close = group.prediction.between(45, 55)
-        for method, values in [("Elastic net", group.prediction), ("Simple baseline", baseline)]:
+        close = baseline.between(45, 55)
+        for method, values in [(model_name, group.prediction), ("Simple baseline", baseline)]:
             scores = score_predictions(group.dem_share, values)
             close_scores = score_predictions(group.loc[close, "dem_share"], values[close])
             rows.append(

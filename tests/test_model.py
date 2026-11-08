@@ -5,7 +5,8 @@ import pandas as pd
 import pytest
 
 from election_forecast.dataset import ballot_party, corrected_roster, district_leans
-from election_forecast.model import design, run
+from election_forecast.model import run
+from election_forecast.benchmark import FAMILIES, design, evaluate, summarize, fit
 
 ROOT = Path(__file__).resolve().parents[1]
 
@@ -14,6 +15,22 @@ def test_forecast_reproduces_reviewed_results():
     expected = pd.read_csv(ROOT / "results/2026-estimates.csv")
     actual = pd.read_csv(ROOT / "reports/2026-estimates.csv")
     pd.testing.assert_frame_equal(actual, expected, check_exact=False, rtol=1e-9, atol=1e-9)
+
+
+def test_benchmark_reproduces_published_comparison():
+    expected = pd.read_csv(ROOT / "results/benchmark/leaderboard.csv")
+    actual = pd.read_csv(ROOT / "reports/benchmark/leaderboard.csv")
+    pd.testing.assert_frame_equal(actual, expected, check_exact=False, rtol=1e-6, atol=1e-6)
+    predictions = pd.read_csv(ROOT / "reports/benchmark/predictions.csv")
+    assert (predictions.trained_through < predictions.cycle).all()
+    assert (
+        predictions.groupby(["cycle", "family"])
+        .race_id.nunique()
+        .groupby("cycle")
+        .nunique()
+        .eq(1)
+        .all()
+    )
 
 
 def test_roster_covers_the_actual_ballot_and_fusion_parties():
@@ -74,13 +91,31 @@ def test_current_year_labels_cannot_change_its_forecast_or_settings():
     t = pd.read_csv(ROOT / "reports/2026-feature-snapshots.csv").head(5)
     # A stratified sample keeps the full temporal boundary while making the test fast.
     h = h.groupby(["chamber", "cycle"], group_keys=False).head(35).copy()
-    _, before, *_ = run(h, t)
+    families = {k: FAMILIES[k] for k in ["baseline", "poll_blend", "residual_ridge"]}
+    before, before_scores = evaluate(h, families, progress=False)
+    before_policy = summarize(before, before_scores, families)[3]
     h.loc[h.cycle.eq(2024), "dem_share"] += 7
-    _, after, *_ = run(h, t)
-    cols = ["race_id", "prediction", "params"]
+    after, after_scores = evaluate(h, families, progress=False)
+    after_policy = summarize(after, after_scores, families)[3]
+    cols = ["race_id", "family", "prediction", "params", "trained_through"]
     pd.testing.assert_frame_equal(
         before.loc[before.cycle.eq(2024), cols].reset_index(drop=True),
         after.loc[after.cycle.eq(2024), cols].reset_index(drop=True),
     )
+    pd.testing.assert_frame_equal(
+        before_policy.loc[before_policy.cycle.eq(2024), cols].reset_index(drop=True),
+        after_policy.loc[after_policy.cycle.eq(2024), cols].reset_index(drop=True),
+    )
+    assert (before.trained_through < before.cycle).all()
     with pytest.raises(AssertionError):
         run(h, t.assign(dem_share=99))
+
+
+def test_selected_blend_fallback_is_independent_of_hidden_polls():
+    h = pd.read_csv(ROOT / "reports/training-data.csv").head(30)
+    model = fit(h, "poll_blend", {"poll_weight": 0.75})
+    masked = model.predict(h, mask_polls=True)
+    h["poll_dem_share"] = np.arange(len(h)) * 99
+    np.testing.assert_array_equal(masked, model.predict(h, mask_polls=True))
+    h["poll_dem_share"] = np.nan
+    np.testing.assert_array_equal(masked, model.predict(h))

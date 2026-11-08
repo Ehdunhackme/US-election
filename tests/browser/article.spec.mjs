@@ -18,7 +18,7 @@ test("every figure and equation renders without external assets", async ({
   await expect(page.locator("article h2").nth(1)).toHaveText(
     "Model description",
   );
-  await expect(page.locator("figure img")).toHaveCount(9);
+  await expect(page.locator("figure img")).toHaveCount(10);
   for (const figure of await page.locator("figure img").all()) {
     await figure.evaluate((image) => image.decode());
     expect(
@@ -40,7 +40,7 @@ test("every figure and equation renders without external assets", async ({
   await expect(page.locator("math")).toHaveCount(3);
   await expect(page.locator(".katex-error")).toHaveCount(0);
   await expect(
-    page.getByText(/There is no basis here for calling the regression/),
+    page.getByText(/I fixed the comparison rules before running this expanded benchmark/),
   ).toBeVisible();
   await page.evaluate(() => document.fonts.ready);
   expect(
@@ -69,5 +69,7 @@ test("every figure and equation renders without external assets", async ({
     .getByRole("heading", { name: "Model description", exact: true })
     .scrollIntoViewIfNeeded();
   await page.screenshot({ path: testInfo.outputPath("article-model.png") });
+  await page.locator("#05-benchmark-comparison").scrollIntoViewIfNeeded();
+  await page.screenshot({ path: testInfo.outputPath("article-benchmark.png") });
   expect(external).toEqual([]);
 });

@@ -226,13 +226,38 @@ def no_poll_chart(artist, scores, masked):
     artist.save(fig, "06-no-poll-validation")
 
 
-def render_figures(root, out, history, forecast, validation, scores, masked):
+def benchmark_chart(artist, meta):
+    ranking = pd.DataFrame(meta["benchmark"]["leaderboard"])
+    fig, (ax,) = artist.canvas(
+        "Which model had the lowest error?",
+        "2018–2024 · equal weight per chamber and election",
+        panel_height=5.1,
+    )
+    names = ranking.method.str.replace(" correction", "", regex=False).replace(
+        {"Histogram-boosting": "Histogram boosting", "Huber-boosting": "Huber boosting"}
+    )
+    y = np.arange(len(ranking))
+    colors = [artist.blue] + [artist.neutral] * (len(y) - 1)
+    ax.hlines(y, 0, ranking.selection_mae_pp, color=colors, lw=1.4)
+    ax.scatter(ranking.selection_mae_pp, y, c=colors, s=35, zorder=3)
+    for yy, value in zip(y, ranking.selection_mae_pp):
+        ax.text(value + 0.13, yy, f"{value:.2f}", va="center", fontsize=10)
+    ax.set_yticks(y, names, fontsize=10 if artist.mobile else 11)
+    ax.set(xlim=(0, 5.2), ylim=(len(y) - 0.4, -0.7), xlabel="Mean absolute error (pp)")
+    artist.clean(ax)
+    ax.set_xticks([0, 2, 4])
+    fig.subplots_adjust(left=0.39 if artist.mobile else 0.25, right=0.98)
+    artist.save(fig, "05-benchmark-comparison")
+
+
+def render_figures(root, out, history, forecast, validation, scores, masked, meta):
     for dark, mobile in [(False, False), (True, False), (True, True)]:
         artist = Figures(out, root, dark, mobile)
         for chamber in ["house", "senate"]:
             national_map(artist, root, forecast, chamber)
             interval_chart(artist, forecast, chamber)
         artist.training(history)
+        benchmark_chart(artist, meta)
         artist.validation(validation)
         artist.validation(validation, True)
         no_poll_chart(artist, scores, masked)
@@ -268,18 +293,19 @@ def article(root, out, history, forecast, validation, scores, masked, meta):
         )
 
     counts = forecast.groupby("chamber").projected_party.value_counts().unstack(fill_value=0)
-    house = counts.loc["house"]
-    senate = counts.loc["senate"]
-    checks = validation_benchmarks(validation)
-    fitted = checks[checks.method.eq("Elastic net")].set_index("chamber")
+    house, senate = counts.loc["house"], counts.loc["senate"]
+    checks = validation_benchmarks(validation, meta["family"])
+    fitted = checks[checks.method.eq(meta["family"])].set_index("chamber")
     fixed_count = int(forecast.fixed_party.notna().sum())
+    benchmark = meta["benchmark"]
+    ranking = pd.DataFrame(benchmark["leaderboard"])
 
     h("Model prediction", "model-prediction")
     p(
-        f"Adding up the district estimates gives Democrats {int(house.get('DEM', 0))} House seats and Republicans {int(house.get('REP', 0))}. For the 35 Senate seats being contested, the split is {int(senate.get('DEM', 0))} Democratic and {int(senate.get('REP', 0))} Republican. The maps cover all 50 states; the Senate total leaves out the 65 seats that are not up for election."
+        f"The model gives Democrats {int(house.get('DEM', 0))} House seats and Republicans {int(house.get('REP', 0))}. Among the 35 Senate seats being contested, it puts {int(senate.get('DEM', 0))} on the Democratic side and {int(senate.get('REP', 0))} on the Republican side. The Senate total leaves out the 65 seats that are not up for election."
     )
     p(
-        "The House margin is narrow. Given the errors in the historical tests below, I would not treat it as a reliable call for control of Congress. These are model estimates, not reported election results."
+        "I built this on November 8, after the election. These maps reconstruct estimates from inputs dated November 2; they are not live results or a forecast published before voting. The bars count the party leading in each race, without calculating the probability of controlling either chamber."
     )
     f(
         "2026-house-map",
@@ -294,61 +320,72 @@ def article(root, out, history, forecast, validation, scores, masked, meta):
 
     h("Model description", "model-description")
     p(
-        f"I used elastic net, a linear regression that penalises large coefficients. It is fitted to {len(history):,} past races: {int(meta['training_by_chamber']['house']):,} House races from 2012 to 2024 and {int(meta['training_by_chamber']['senate']):,} Senate races from 2000 to 2024. One model handles both chambers, with extra terms that let Senate races respond differently to local partisanship and incumbency."
+        "The final model is a weighted average: 75% race polling and 25% of a simple partisan baseline. If a race has no matched poll, it uses the baseline alone. I arrived at that choice by comparing 13 model families across past elections. The more complicated models did not improve on it under the scoring rule below."
     )
     p(
-        "For a Democratic versus Republican race, the target is the Democratic share of the votes cast for those two parties. Third-party votes are left out of this denominator:"
+        "For a Democratic versus Republican race, I predict the Democratic share of votes cast for those two parties. Third-party votes are left out of the denominator:"
     )
     eq(
         "Democratic share of the Democratic and Republican vote",
         r"y_i = 100\,\frac{D_i}{D_i + R_i}",
     )
     p(
-        "The starting information is fairly simple: how the district or state voted for president, the national generic ballot, whether either candidate is an incumbent, and any available race polls. The model also knows whether it is a midterm and which party holds the presidency. For the House, the presidential figures use the boundaries of the district being predicted."
-    )
-    p("Race polling enters as a departure from the local lean plus the national environment:")
-    eq(
-        "Race polling minus the local and national baseline",
-        r"\delta_i = p_i - (50 + \ell_i + g_i)",
-    )
-    p(
-        "Here p is the Democratic two-party polling share, ℓ is local presidential lean relative to the country, and g is the Democratic generic-ballot share minus 50. A separate indicator records whether a race poll exists."
-    )
-    p(
-        "For an unpolled race, both polling terms are zero. To train for that situation, I include each polled historical race twice: once with its poll and once with the poll hidden. Each copy gets half weight in the regression loss. Unpolled races appear once with weight one."
-    )
-    p(
-        "The 2026 poll averages use the preceding 90 days. A poll's time weight halves every 14 days, and sample size contributes through its square root. Repeated surveys from one pollster are capped at that pollster's strongest survey weight. Questions must match the selected candidates in the roster."
+        "The baseline adds the national Democratic generic-ballot share, q, to local presidential lean, ℓ. Lean measures how much more Democratic or Republican a district or state is than the country. House figures use the district boundaries relevant to the election. Values are kept between 0 and 100:"
     )
     eq(
-        "Weighted elastic-net loss",
-        r"\begin{aligned}\mathcal{L} ={}& \frac{1}{2W}\sum_{i=1}^{n} w_i(y_i-\widehat y_i)^2 \\ &+ \alpha r\lVert\boldsymbol{\beta}\rVert_1 + \frac{\alpha(1-r)}{2}\lVert\boldsymbol{\beta}\rVert_2^2\end{aligned}",
+        "National generic ballot plus local presidential lean",
+        r"b_i = \operatorname{clip}(q + \ell_i,\,0,\,100)",
     )
     p(
-        f"W is the total training weight, and β contains the coefficients after the inputs are standardised. The intercept is not penalised. I tried six penalty settings; the final fit uses α = {meta['params']['alpha']:g} and r = {meta['params']['l1_ratio']:g}. Missing values and scaling are learned from the training rows. These settings are selected within elastic net; that does not make it the best forecasting method."
+        "Where a matched race poll exists, its Democratic two-party share, p, gets three times the weight of the baseline:"
+    )
+    eq(
+        "Poll and baseline blend with a fallback for unpolled races",
+        r"\widehat y_i = \begin{cases}0.75p_i + 0.25b_i & \text{with a poll} \\ b_i & \text{without a poll}\end{cases}",
+    )
+    p(
+        "I compared polling weights of 25%, 50%, 75% and 100%. Earlier-year tests selected 75% for each of the four evaluated elections and for the final model. This weight is the model's tuned setting; there are no fitted regression coefficients in the final estimate."
+    )
+    p(
+        "The 2026 polling averages cover the preceding 90 days. A poll's time weight halves every 14 days, while sample size contributes through its square root. Repeated surveys from one pollster are capped at that pollster's strongest survey weight. Questions must match the selected candidates in the roster."
+    )
+    p(
+        f"The comparison uses {len(history):,} historical D/R races: {int(meta['training_by_chamber']['house']):,} House races from 2012 to 2024 and {int(meta['training_by_chamber']['senate']):,} Senate races from 2000 to 2024. The regression and tree models also had access to incumbency, the election cycle and presidential party. Those extra inputs are not part of the winning blend."
     )
     f(
         "01-training-years",
-        "Number of historical training races by election year",
-        "Training includes polled and unpolled D/R races with the required fundamentals. Same-party contests, uncontested races and special elections are excluded. Florida's 2016 House races are omitted because the required presidential figures are missing.",
+        "Historical races available for the model comparison, by year",
+        "Polled and unpolled D/R races with the required fundamentals. Same-party contests, uncontested races and special elections are excluded. Florida's 2016 House races are omitted because the required presidential figures are missing.",
     )
 
-    h("How it did on past elections", "historical-validation")
+    h("Comparing the models", "historical-validation")
     p(
-        "I tested 2018, 2020, 2022 and 2024 in order, fitting each prediction on earlier elections. Penalty selection also uses earlier test years, with a fixed starting setting for the first two. These tests helped develop the model, so they are not an untouched final exam."
+        "I fixed the comparison rules before running this expanded benchmark: 13 model families, 47 settings in total, and mean absolute error as the selection measure. An error of three percentage points means, for example, predicting 53% when the actual share is 50%."
     )
     p(
-        "A useful check is whether the regression beats a simpler estimate. The benchmark below just adds local presidential lean to the national Democratic generic-ballot share, then clips the result to 0–100. It has no fitted coefficients. Both methods are scored on exactly the same races, with each race weighted equally."
+        "The tests move forward through 2018, 2020, 2022 and 2024. For each election, a model can fit and choose its settings using earlier years only. Tests on 2014 and 2016 supply the initial tuning history. I average the errors equally across elections and chambers, so the much larger House sample does not overwhelm the Senate."
     )
-    comparison = checks[["chamber", "method", "n", "mae_pp", "rmse_pp"]].copy()
-    comparison["chamber"] = comparison.chamber.str.title()
-    comparison.columns = ["Chamber", "Method", "Races", "Mean absolute error (pp)", "RMSE (pp)"]
-    table(comparison.round(2))
+    f(
+        "05-benchmark-comparison",
+        "Historical error for all 13 model families",
+        "Mean absolute error in two-party vote-share percentage points. Each chamber and test election has equal weight. Lower is better; blue marks the selected model.",
+    )
+    comparison = (
+        ranking[["method", "selection_mae_pp", "house_mae_pp", "senate_mae_pp"]].copy().round(2)
+    )
+    comparison.columns = ["Model", "Overall MAE (pp)", "House MAE (pp)", "Senate MAE (pp)"]
+    table(comparison, "Full benchmark results (13 models)")
     p(
-        "The simple benchmark has lower average absolute error in both chambers. Elastic net has slightly lower Senate RMSE, which puts more weight on large misses, but it does not beat the benchmark on House RMSE. There is no basis here for calling the regression the better forecaster."
+        f"The blend has an average error of {benchmark['winner_mae_pp']:.2f} points, compared with {benchmark['baseline_mae_pp']:.2f} for the baseline, a reduction of {100 * benchmark['relative_improvement']:.1f}%. Most of that improvement comes from Senate races: 2.50 points versus 3.49. The House difference is much smaller, 2.63 versus 2.72."
     )
     p(
-        f"Across all the test races, the model puts the D/R candidates in the right order {100 * fitted.loc['house', 'winner_accuracy']:.1f}% of the time for the House and {100 * fitted.loc['senate', 'winner_accuracy']:.1f}% for the Senate. Most races are not close. Among races it places between 45% and 55% Democratic share, those figures fall to {100 * fitted.loc['house', 'close_d_r_order_accuracy']:.1f}% across {int(fitted.loc['house', 'close_n'])} House races and {100 * fitted.loc['senate', 'close_d_r_order_accuracy']:.1f}% across {int(fitted.loc['senate', 'close_n'])} Senate races. That is the harder test, and the Senate sample is small."
+        "It does not win every year. In 2020, the blend did worse than the baseline in both chambers. In 2024 House races they are identical because the saved inputs contain no race polls. Removing any one of the four test elections still leaves the blend first overall, but four elections are a small sample."
+    )
+    p(
+        f"There is a second catch: I chose the winning family after seeing these historical scores. A separate check chooses both the family and its settings using earlier years only. That procedure scores {benchmark['sequential_selection_mae_pp']:.2f} points, rather than {benchmark['winner_mae_pp']:.2f}. It is a useful reminder that choosing a winner and measuring its performance on the same comparison makes the headline result look better. These tests have also informed earlier versions of this project, so neither number is an untouched final test."
+    )
+    p(
+        f"On a common set of close races, defined by a baseline share between 45% and 55%, the blend puts the D/R candidates in the right order {100 * fitted.loc['house', 'close_d_r_order_accuracy']:.1f}% of the time across {int(fitted.loc['house', 'close_n'])} House races and {100 * fitted.loc['senate', 'close_d_r_order_accuracy']:.1f}% across {int(fitted.loc['senate', 'close_n'])} Senate races. The baseline gets 81.3% and 63.2%, respectively. This subset is the same for every model, and the Senate sample is small."
     )
     f(
         "02-historical-validation",
@@ -357,34 +394,36 @@ def article(root, out, history, forecast, validation, scores, masked, meta):
     )
     f(
         "03-close-races",
-        "Historical races the model placed between 45 and 55 percent Democratic share",
-        "The same test, limited to races the model thought were close. Large misses stay in view.",
+        "Historical races where the simple baseline predicts 45 to 55 percent Democratic share",
+        "The common close-race subset used in the benchmark. Neither the winning model nor the actual result determines which races enter this chart.",
+    )
+    unpolled = (
+        forecast[forecast.poll_dem_share.isna() & forecast.fixed_party.isna()]
+        .groupby("chamber")
+        .size()
     )
     p(
-        "I also reran the test predictions with every race poll hidden. Polling does not help in every year. There are no 2024 House race polls in the saved inputs, so the two House lines meet there. In 2026, 327 House races and eight Senate races rely on fundamentals alone."
+        f"With all race polling hidden, the selected model reduces to the simple baseline. That is also how it handles the {int(unpolled.get('house', 0))} House races and {int(unpolled.get('senate', 0))} Senate races without a matched poll in the 2026 inputs. Polling helps in some years and hurts in others:"
     )
     f(
         "06-no-poll-validation",
         "Vote-share errors with available race polls and with polls withheld",
-        "Same fitted model, same test races. Only the race-poll inputs change. Lower RMSE is better.",
+        "Same test races and selected settings. Only the race-poll inputs change. RMSE gives extra weight to large errors; it is reported here but did not select the winner.",
     )
 
     h("Race estimates and uncertainty", "race-estimates")
     p(
-        "The ranges below come from mistakes on earlier test elections. I group those errors by chamber and polling availability, giving each past election equal weight. If a group has fewer than two earlier cycles, I use the chamber's full error history. This leaves only 2022 and 2024 for checking the ranges."
+        "The ranges come from the blend's mistakes in earlier test elections. I group those errors by chamber and polling availability, giving each past election equal weight. A group with fewer than two earlier cycles falls back to the chamber's full error history. Errors from 2014 and 2016 make it possible to start checking the ranges in 2018."
     )
     coverage = scores[scores.coverage_95.notna()][
         ["cycle", "chamber", "brier", "coverage_95"]
     ].copy()
     coverage["chamber"] = coverage.chamber.str.title()
     coverage["coverage_95"] = coverage.coverage_95.map(lambda x: f"{100 * x:.1f}%")
-    coverage.columns = ["Election", "Chamber", "Brier score", "Results inside 95% range"]
-    table(coverage.round(3))
+    coverage.columns = ["Election", "Chamber", "Brier score", "95% range coverage"]
+    table(coverage.round(3), "Historical probability and range checks")
     p(
-        "Brier score measures the error in the D/R ordering probabilities; lower is better. A well-calibrated 95% range should contain about 95% of outcomes over many comparable elections. The Senate range covered only 89.7% in 2022. Two test years are not enough to establish dependable coverage."
-    )
-    p(
-        "Dots mark the model estimate; open circles mark polling averages. The horizontal lines show the historical-error ranges. The House chart shows the 25 closest estimates, and the lists below contain every race. An asterisk flags a different candidate or voting-rule treatment."
+        "The nominal 95% ranges contain more than 98% of House results in each test year. They are fairly wide, not precisely calibrated. The Brier scores measure the model's probability of a Democratic majority of the D/R vote; lower is better. Neither check establishes the probability of controlling Congress."
     )
     f(
         "2026-house-intervals",
@@ -396,6 +435,7 @@ def article(root, out, history, forecast, validation, scores, masked, meta):
         "Estimates for all 35 Senate contests",
         "The ranges for independent candidates and ranked-choice races borrow D/R errors. They show how far an estimate could move under those errors; they are not validated candidate-win intervals.",
     )
+
     for chamber in ["senate", "house"]:
         g = forecast[forecast.chamber.eq(chamber)].sort_values("label").copy()
         for side in ["left", "right"]:
@@ -453,13 +493,13 @@ def article(root, out, history, forecast, validation, scores, masked, meta):
 
     h("What this analysis cannot establish", "data-and-limitations")
     p(
-        "I built this on November 8, after Election Day. No 2026 results are used in training, tuning or testing, and I have not scored these estimates against the 2026 results. The November 2 cutoff uses field dates and database dates from files retrieved later. I cannot verify that every input was available in the same form before voting."
+        "By November 8, AP-based result reporting had called Democratic majorities in both chambers. That context is known while writing this article, but no 2026 outcomes enter the numerical benchmark, model selection or calibration. I have not scored these estimates against the 2026 results. The November 2 cutoff uses field dates and database dates from files retrieved later. I cannot verify that every input was available in the same form before voting."
     )
     p(
         "The historical data also need care. Candidate rosters come from election returns, and the older polling archive selected the eventual top candidates. Some district presidential percentages are rounded. These are useful research inputs, but they do not recreate the exact information a forecaster had at the time."
     )
     p(
-        "Finally, the seat bars simply count which party leads each estimate. They do not give the chance of winning Congress. A national polling miss could move many races together, and this model does not simulate that shared error. The benchmark comparison and the close-race results are reasons to improve the model before relying on it."
+        "Finally, the seat bars simply count which party leads each estimate. They do not give the chance of winning Congress. A national polling miss could move many races together, and this model does not simulate that shared error. The benchmark supports using this blend on these saved inputs. It does not establish that the model is the best choice for a new election or a different data source."
     )
     h("A closer look at the errors", "residual-diagnostics")
     f(
@@ -469,6 +509,10 @@ def article(root, out, history, forecast, validation, scores, masked, meta):
     )
 
     sources = [
+        (
+            "2026 reported results, ABC / Associated Press",
+            "https://www.abc.net.au/news/2026-11-04/us-midterm-election-results-2026/107235570",
+        ),
         (
             "2026 candidate roster, House Clerk",
             "https://clerk.house.gov/member_info/electionInfo/2026/120-nominations.pdf",
@@ -504,7 +548,7 @@ def article(root, out, history, forecast, validation, scores, masked, meta):
         "note": "Written after Election Day · reconstructed November 2 inputs",
         "blocks": blocks,
         "sources": [{"label": label, "url": url} for label, url in sources],
-        "reproducibility": "The repository contains the saved inputs, model code, race estimates and historical checks, including the simple benchmark comparison.",
+        "reproducibility": "The repository contains the saved inputs, model code, race estimates and historical checks, including all 13 models, the settings tried and the selection protocol.",
     }
     assert "\u2014" not in json.dumps(payload, ensure_ascii=False)
     (out / "article.json").write_text(

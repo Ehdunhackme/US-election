@@ -97,8 +97,8 @@ class Figures:
             history.groupby(["cycle", "chamber"]).size().unstack().reindex(range(2000, 2025, 2))
         )
         fig, (ax,) = self.canvas(
-            "Training data across election years",
-            "D/R races with the required fundamentals, with or without polling",
+            "Historical data across election years",
+            "D/R races available for the model comparison",
             panel_height=3.7 if self.mobile else 3.5,
         )
         if self.mobile:
@@ -147,7 +147,7 @@ class Figures:
         )
         for ax, chamber in zip(axes, ["house", "senate"]):
             all_rows = rows[rows.chamber.eq(chamber)]
-            g = all_rows[all_rows.prediction.between(45, 55)] if close else all_rows
+            g = all_rows[all_rows.baseline_prediction.between(45, 55)] if close else all_rows
             correct = (g.prediction > 50) == (g.dem_share > 50)
             ax.scatter(
                 g.loc[correct, "prediction"],
@@ -170,7 +170,7 @@ class Figures:
             ax.plot([low, high], [low, high], color=self.muted, lw=0.9, linestyle=(0, (3, 3)))
             ax.axhline(50, color=self.grid, lw=1)
             ax.axvline(50, color=self.grid, lw=1)
-            ax.set_xlim((45, 55) if close else (low, high))
+            ax.set_xlim(low, high)
             ax.set_ylim(low, high)
             ax.set_xlabel("Predicted D vote share (%)")
             ax.set_ylabel("Actual D vote share (%)")

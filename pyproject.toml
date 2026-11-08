@@ -5,7 +5,7 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "us-election-forecast"
 version = "1.0.0"
-description = "One elastic-net model for every 2026 House and Senate contest"
+description = "A 13-model historical benchmark and one selected model for every 2026 House and Senate contest"
 requires-python = ">=3.13"
 dependencies = [
   "numpy>=2.1,<3", "pandas>=2.2,<4", "scipy>=1.14,<2",

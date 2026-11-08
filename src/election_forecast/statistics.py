@@ -49,3 +49,24 @@ def residual_distribution(history, predictions):
         np.clip(predictions + quantiles[0], 0, 100),
         np.clip(predictions + quantiles[1], 0, 100),
     )
+
+
+def calibrate(frame, values, residuals):
+    probabilities, lower, upper = (
+        np.full(len(frame), np.nan),
+        np.full(len(frame), np.nan),
+        np.full(len(frame), np.nan),
+    )
+    for chamber in ["house", "senate"]:
+        for polled in [False, True]:
+            idx = np.flatnonzero(
+                frame.chamber.eq(chamber) & frame.poll_dem_share.notna().eq(polled)
+            )
+            pool = [r for r in residuals if r["chamber"] == chamber and r["polled"] == polled]
+            if len({r["cycle"] for r in pool}) < 2:
+                pool = [r for r in residuals if r["chamber"] == chamber]
+            if len(idx):
+                probabilities[idx], lower[idx], upper[idx] = residual_distribution(
+                    pool, values[idx]
+                )
+    return probabilities, lower, upper

@@ -34,6 +34,10 @@ jobs:
             site/index.html
             reports/*.csv
             reports/run.json
+            reports/selected-model.json
+            reports/benchmark/leaderboard.csv
+            reports/benchmark/selection-policy.csv
+            reports/benchmark/manifest.json
             reports/*.png
             reports/*.svg
             test-results/**/*.png
